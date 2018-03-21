@@ -126,6 +126,7 @@ private:
     std::shared_ptr<IITSH_HW::IITSH_device> device_;
 
     ros::NodeHandle nh_;
+    ros::Publisher debug_cur;//joao debug
 
     int device_id_;
     comm_settings comm_settings_t_;

@@ -28,7 +28,7 @@
 #include <memory>
 
 #include "soft_hand_ros_control/iit_hand_hw.h"
-
+#include <std_msgs/Int16MultiArray.h> //joao debug
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(iit_hand_hw::IITSH_HW, hardware_interface::RobotHW)
@@ -117,6 +117,10 @@ namespace iit_hand_hw {
         this->registerInterface(&state_interface_);
         this->registerInterface(&position_interface_);
 
+
+        this->debug_cur=nh_.advertise<std_msgs::Int16MultiArray>("debug_currents",1);
+
+
         // Finally, do the qb tools thing
         // get the port by id
         /// @todo Abort after a few attempts and print a troubleshoot suggestion:
@@ -131,6 +135,13 @@ namespace iit_hand_hw {
                 // and activate the hand
                 commActivate(&comm_settings_t_, device_id_, 1);
                 ROS_INFO("Initialisation complete");
+                                int control_mode=CONTROL_CURRENT;
+                //                uint8_t params[512];
+                //                commGetParamList(&comm_settings_t_,device_id_,0,params,1,1,params);
+                //                ROS_WARN("CONTROL MODE: %s",params);
+//                int pos_limits[4];
+                //commGetParamList(&comm_settings_t_, device_id_, PARAM_POS_LIMIT, pos_limits, 4, 2, NULL);
+//                ROS_WARN("LIMITS: %d %d %d %d",pos_limits[0],pos_limits[1],pos_limits[2],pos_limits[3]);
                 return true;
             }
             else {
@@ -175,7 +186,29 @@ namespace iit_hand_hw {
         pj_limits_interface_.enforceLimits(period);
 
         // write to the hand
-        auto pos = short(17000.0 * device_->joint_position_command[0]);
+        //auto pos = short(17000.0 * device_->joint_position_command[0]);
+        //Current mode:
+        float deadband=0.05;
+        float stiffness;
+        nh_.param<float>("/iit_hand/stiffness", stiffness, 1.0);
+        nh_.param<float>("/iit_hand/deadband", deadband, 0.01);
+
+        float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
+        short pos=0;
+        if (fabs(error)>deadband) pos = (short) (1500.0*error*stiffness);
+        std_msgs::Int16MultiArray a;
+        a.data.push_back(pos);
+        a.data.push_back((short) (device_->joint_position_command[0]*1000));
+        a.data.push_back((short) (error*1000));
+        a.data.push_back((short) (this->device_->joint_position[0]*1000));
+        a.data.push_back((short) (this->device_->joint_effort[0]*1000));
+        if(fabs(pos)==90.0){
+            ROS_WARN("THIS IS GOING SHIT %f %f", error, stiffness);
+        }
+
+
+        debug_cur.publish(a);//joao debug
+
         set_input(pos);
     }
 
