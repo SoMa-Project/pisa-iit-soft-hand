@@ -119,6 +119,7 @@ namespace iit_hand_hw {
 
 
         this->debug_cur=nh_.advertise<std_msgs::Int16MultiArray>("debug_currents",1);
+        S_e=0;
 
 
         // Finally, do the qb tools thing
@@ -194,19 +195,20 @@ namespace iit_hand_hw {
         nh_.param<float>("/iit_hand/deadband", deadband, 0.01);
 
         float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
+        //S_e+=error;
         short pos=0;
-        if (fabs(error)>deadband) pos = (short) (1500.0*error*stiffness);
+        if (fabs(error)>deadband) pos = (short) ((1500.0*error*stiffness)/*+10*S_e*/);
+        //else S_e=0;
+        //ROS_INFO("s_e: %f",S_e);
         std_msgs::Int16MultiArray a;
         a.data.push_back(pos);
         a.data.push_back((short) (device_->joint_position_command[0]*1000));
         a.data.push_back((short) (error*1000));
         a.data.push_back((short) (this->device_->joint_position[0]*1000));
-        a.data.push_back((short) (this->device_->joint_effort[0]*1000));
+        a.data.push_back((short) (this->device_->joint_effort[0]));
         if(fabs(pos)==90.0){
             ROS_WARN("THIS IS GOING SHIT %f %f", error, stiffness);
         }
-
-
         debug_cur.publish(a);//joao debug
 
         set_input(pos);

@@ -127,6 +127,7 @@ private:
 
     ros::NodeHandle nh_;
     ros::Publisher debug_cur;//joao debug
+    float S_e;
 
     int device_id_;
     comm_settings comm_settings_t_;
@@ -141,6 +142,7 @@ private:
     joint_limits_interface::PositionJointSoftLimitsInterface pj_limits_interface_;
     joint_limits_interface::EffortJointSaturationInterface ej_sat_interface_;
     joint_limits_interface::EffortJointSoftLimitsInterface ej_limits_interface_;
+
 
     bool start();
     void stop();
