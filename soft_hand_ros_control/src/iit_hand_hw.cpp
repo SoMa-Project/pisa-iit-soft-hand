@@ -172,8 +172,8 @@ namespace iit_hand_hw {
 
         // fill the state variables
         for (unsigned int i = 0; i < N_SYN; i++) {
-            this->device_->joint_position_prev[i] = device_->joint_position[i]/17000.0;
-            this->device_->joint_position[i] = double(inputs[0]) / 17000.0;
+            this->device_->joint_position_prev[i] = device_->joint_position[i]/1.0;
+            this->device_->joint_position[i] = double(inputs[0]) / 19000.0;
             this->device_->joint_effort[i] = double(currents[0]) * 1.0;
             this->device_->joint_velocity[i] =
                     filters::exponentialSmoothing((device_->joint_position[i] - device_->joint_position_prev[i]) / period.toSec(),
@@ -191,13 +191,15 @@ namespace iit_hand_hw {
         //Current mode:
         float deadband=0.05;
         float stiffness;
-        nh_.param<float>("/iit_hand/stiffness", stiffness, 1.0);
-        nh_.param<float>("/iit_hand/deadband", deadband, 0.01);
+        std::string hand_name_ = nh_.param<std::string>("hand_name", "iit_hand");
+
+        nh_.param<float>(hand_name_ +"/stiffness", stiffness, 1.0);
+        nh_.param<float>(hand_name_ +"/deadband", deadband, 0.01);
 
         float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
         //S_e+=error;
         short pos=0;
-        if (fabs(error)>deadband) pos = (short) ((1500.0*error*stiffness)/*+10*S_e*/);
+        if (fabs(error)>deadband) pos = (short) ((1500.0*error*stiffness)+(error/(0.0001+fabs(error))*00)/*+10*S_e*/);
         //else S_e=0;
         //ROS_INFO("s_e: %f",S_e);
         std_msgs::Int16MultiArray a;
@@ -206,9 +208,7 @@ namespace iit_hand_hw {
         a.data.push_back((short) (error*1000));
         a.data.push_back((short) (this->device_->joint_position[0]*1000));
         a.data.push_back((short) (this->device_->joint_effort[0]));
-        if(fabs(pos)==90.0){
-            ROS_WARN("THIS IS GOING SHIT %f %f", error, stiffness);
-        }
+
         debug_cur.publish(a);//joao debug
 
         set_input(pos);
