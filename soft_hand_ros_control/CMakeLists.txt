@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## qbAPI is the default electronics the hand is sold with
 ## This assumes you cloned recursively to get he qbAPI sources
-SET(HAND_TOOLS /home/robot/ROS/iit_visit/src/pisa-iit-soft-hand/hand-tools/qbAPI)
+SET(HAND_TOOLS ../hand-tools/qbAPI)
 
 catkin_package(
     INCLUDE_DIRS include
