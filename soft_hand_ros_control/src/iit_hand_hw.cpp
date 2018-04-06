@@ -193,8 +193,8 @@ namespace iit_hand_hw {
         float stiffness;
         std::string hand_name_ = nh_.param<std::string>("hand_name", "iit_hand");
 
-        nh_.param<float>(hand_name_ +"/stiffness", stiffness, 1.0);
-        nh_.param<float>(hand_name_ +"/deadband", deadband, 0.01);
+        nh_.param<float>("/" + hand_name_ +"/stiffness", stiffness, 1.0);
+        nh_.param<float>("/" + hand_name_ +"/deadband", deadband, 0.01);
 
         float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
         //S_e+=error;
