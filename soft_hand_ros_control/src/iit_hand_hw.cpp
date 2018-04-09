@@ -136,9 +136,8 @@ namespace iit_hand_hw {
                 // and activate the hand
                 commActivate(&comm_settings_t_, device_id_, 1);
                 ROS_INFO("Initialisation complete");
-                                int control_mode=CONTROL_CURRENT;
+                                // int control_mode=CONTROL_CURRENT;
                 //                uint8_t params[512];
-                //                commGetParamList(&comm_settings_t_,device_id_,0,params,1,1,params);
                 //                ROS_WARN("CONTROL MODE: %s",params);
 //                int pos_limits[4];
                 //commGetParamList(&comm_settings_t_, device_id_, PARAM_POS_LIMIT, pos_limits, 4, 2, NULL);
@@ -210,6 +209,21 @@ namespace iit_hand_hw {
         a.data.push_back((short) (this->device_->joint_effort[0]));
 
         debug_cur.publish(a);//joao debug
+
+        pos = 1;
+
+        if(!control_mode_set){
+            unsigned char aux_string[2000];
+            commGetParamList(&comm_settings_t_, device_id_, 5, NULL, 1, 1, aux_string);
+            std::cout<<aux_string<<std::endl;
+
+            uint8_t control_mode = 0; //0 for position
+            commGetParamList(&comm_settings_t_,device_id_,5,&control_mode,1,1,NULL);
+            commStoreParams(&comm_settings_t_,device_id_);
+
+            control_mode_set = true;
+        }
+        
 
         set_input(pos);
     }
