@@ -132,6 +132,7 @@ private:
     int device_id_;
     comm_settings comm_settings_t_;
     char port_[255];
+    bool control_mode_set = false;
 
     urdf::Model urdf_model_;
 
