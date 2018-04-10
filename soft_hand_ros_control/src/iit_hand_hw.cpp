@@ -187,10 +187,12 @@ namespace iit_hand_hw {
 
         bool position_control;
 
+        while (!ros::param::has("/position_control") && !control_mode_set) ros::Duration(0.5).sleep();
+
         nh_.param<bool>("/position_control", position_control, true);
 
         if(!control_mode_set){
-
+            ROS_INFO("Control_mode param was set");
             uint8_t control_mode;
             if(position_control) control_mode = 0;
             else control_mode = 2;
