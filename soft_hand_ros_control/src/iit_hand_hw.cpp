@@ -189,12 +189,12 @@ namespace iit_hand_hw {
         // write to the hand
         //auto pos = short(17000.0 * device_->joint_position_command[0]);
         //Current mode:
-        float deadband=0.05;
-        float stiffness;
-        std::string hand_name_ = nh_.param<std::string>("hand_name", "iit_hand");
+        float deadband=0.01;
+        float stiffness=6.0;
+        // std::string hand_name_ = nh_.param<std::string>("hand_name", "iit_hand");
 
-        nh_.param<float>("/" + hand_name_ +"/stiffness", stiffness, 1.0);
-        nh_.param<float>("/" + hand_name_ +"/deadband", deadband, 0.01);
+        // nh_.param<float>("/" + hand_name_ +"/stiffness", stiffness, 1.0);
+        // nh_.param<float>("/" + hand_name_ +"/deadband", deadband, 0.01);
 
         float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
         //S_e+=error;
@@ -202,14 +202,14 @@ namespace iit_hand_hw {
         if (fabs(error)>deadband) pos = (short) ((1500.0*error*stiffness)+(error/(0.0001+fabs(error))*00)/*+10*S_e*/);
         //else S_e=0;
         //ROS_INFO("s_e: %f",S_e);
-        std_msgs::Int16MultiArray a;
-        a.data.push_back(pos);
-        a.data.push_back((short) (device_->joint_position_command[0]*1000));
-        a.data.push_back((short) (error*1000));
-        a.data.push_back((short) (this->device_->joint_position[0]*1000));
-        a.data.push_back((short) (this->device_->joint_effort[0]));
+        // std_msgs::Int16MultiArray a;
+        // a.data.push_back(pos);
+        // a.data.push_back((short) (device_->joint_position_command[0]*1000));
+        // a.data.push_back((short) (error*1000));
+        // a.data.push_back((short) (this->device_->joint_position[0]*1000));
+        // a.data.push_back((short) (this->device_->joint_effort[0]));
 
-        debug_cur.publish(a);//joao debug
+        // debug_cur.publish(a);//joao debug
 
         set_input(pos);
     }
