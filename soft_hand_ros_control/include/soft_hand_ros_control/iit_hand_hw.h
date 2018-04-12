@@ -97,6 +97,7 @@ public:
         commStoreParams(&comm_settings_t_,device_id_);
 
         isInPositionMode = req.isInPositionMode;
+        isModeSet = true;
 
         return true;
     }
@@ -149,6 +150,7 @@ private:
     comm_settings comm_settings_t_;
     char port_[255];
     bool isInPositionMode = true;
+    bool isModeSet = false;
 
     urdf::Model urdf_model_;
 

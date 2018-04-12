@@ -187,13 +187,18 @@ namespace iit_hand_hw {
 
         
         short pos;
-
-        if(isInPositionMode){
-            pos = short(17000.0 * device_->joint_position_command[0]);
+        if(isModeSet){
+            if(isInPositionMode){
+                pos = short(17000.0 * device_->joint_position_command[0]);
+            }
+            else{
+                pos = short(device_->joint_position_command[0]);
+            }
         }
         else{
-            pos = short(device_->joint_position_command[0]);
+            pos = short(0);
         }
+        
 
         set_input(pos);
     }
