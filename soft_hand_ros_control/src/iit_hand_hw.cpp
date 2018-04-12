@@ -185,46 +185,14 @@ namespace iit_hand_hw {
         pj_sat_interface_.enforceLimits(period);
         pj_limits_interface_.enforceLimits(period);
 
-        bool position_control;
-
-        while (!ros::param::has("/position_control") && !control_mode_set) ros::Duration(0.5).sleep();
-
-        nh_.param<bool>("/position_control", position_control, true);
-
-        if(!control_mode_set){
-            ROS_INFO("Control_mode param was set");
-            uint8_t control_mode;
-            if(position_control) control_mode = 0;
-            else control_mode = 2;
-            
-            commGetParamList(&comm_settings_t_,device_id_,6,&control_mode,1,1,NULL);
-            commStoreParams(&comm_settings_t_,device_id_);
-
-            control_mode_set = true;
-        }
-
+        
         short pos;
 
-        if(position_control){
+        if(isInPositionMode){
             pos = short(17000.0 * device_->joint_position_command[0]);
         }
         else{
-            float deadband;
-            float stiffness;
-            std::string hand_name_ = nh_.param<std::string>("/hand_name", "iit_hand");
-
-            nh_.param<float>("/" + hand_name_ +"/stiffness", stiffness, 1.0);
-            nh_.param<float>("/" + hand_name_ +"/deadband", deadband, 0.01);
-            float error=(device_->joint_position_command[0]-this->device_->joint_position[0]);
-            if (fabs(error)>deadband) pos = (short) (1500.0*error*stiffness); //((1500.0*error*stiffness)+(error/(0.0001+fabs(error))*00)/*+10*S_e*/);
-            std_msgs::Int16MultiArray a;
-            a.data.push_back(pos);
-            a.data.push_back((short) (device_->joint_position_command[0]*1000));
-            a.data.push_back((short) (error*1000));
-            a.data.push_back((short) (this->device_->joint_position[0]*1000));
-            a.data.push_back((short) (this->device_->joint_effort[0]));
-
-            debug_cur.publish(a);//joao debug
+            pos = short(device_->joint_position_command[0]);
         }
 
         set_input(pos);

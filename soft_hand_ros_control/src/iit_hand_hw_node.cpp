@@ -62,6 +62,8 @@ int main( int argc, char** argv )
   // initialisation/configuration routine
   iit_softhand.init(iit_nh, iit_nh);
 
+  ros::ServiceServer service = iit_nh.advertiseService("setControlMode", &iit_hand_hw::IITSH_HW::set_control_mode, &iit_softhand);
+
   // timer variables
   struct timespec ts = {0, 0};
   ros::Time last(ts.tv_sec, ts.tv_nsec), now(ts.tv_sec, ts.tv_nsec);

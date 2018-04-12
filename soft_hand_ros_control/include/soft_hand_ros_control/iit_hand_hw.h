@@ -49,6 +49,9 @@
 #include "qbmove_communications.h"
 #include "soft_hand_ros_control/definitions.h"
 
+#include "soft_hand_ros_control/setControlMode.h"
+
+
 // just thinking of any time in the future the soft hand might have more than one synergy
 constexpr unsigned int N_SYN = 1;
 
@@ -84,6 +87,19 @@ public:
     int port_selection(const int id, char* my_port);
     int open_port(char * port);
     void set_input(short int pos);
+
+    bool set_control_mode(soft_hand_ros_control::setControlMode::Request &req, soft_hand_ros_control::setControlMode::Response &res){
+        uint8_t control_mode;
+        if(req.isInPositionMode) control_mode = 0;
+        else control_mode = 2;
+
+        commGetParamList(&comm_settings_t_,device_id_,6,&control_mode,1,1,NULL);
+        commStoreParams(&comm_settings_t_,device_id_);
+
+        isInPositionMode = req.isInPositionMode;
+
+        return true;
+    }
 
     struct IITSH_device {
         std::vector<std::string> joint_names;
@@ -132,7 +148,7 @@ private:
     int device_id_;
     comm_settings comm_settings_t_;
     char port_[255];
-    bool control_mode_set = false;
+    bool isInPositionMode = true;
 
     urdf::Model urdf_model_;
 
@@ -147,5 +163,9 @@ private:
 
     bool start();
     void stop();
+
+
+
+
 };
 }
