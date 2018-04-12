@@ -143,14 +143,15 @@ private:
     std::shared_ptr<IITSH_HW::IITSH_device> device_;
 
     ros::NodeHandle nh_;
-    ros::Publisher debug_cur;//joao debug
-    float S_e;
+    float max_tick_ = 19000.0;
+    float max_current_ = 1500.0;
 
     int device_id_;
     comm_settings comm_settings_t_;
     char port_[255];
     bool isInPositionMode = true;
     bool isModeSet = false;
+    ros::ServiceServer controlService;
 
     urdf::Model urdf_model_;
 

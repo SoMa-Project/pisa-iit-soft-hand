@@ -43,6 +43,8 @@ namespace iit_hand_hw {
     bool IITSH_HW::init(ros::NodeHandle &n, ros::NodeHandle &robot_hw_nh) {
         nh_ = robot_hw_nh;
 
+        controlService = nh_.advertiseService("/setControlMode", &iit_hand_hw::IITSH_HW::set_control_mode, this);
+
         return start();
     }
 
@@ -117,11 +119,6 @@ namespace iit_hand_hw {
         this->registerInterface(&state_interface_);
         this->registerInterface(&position_interface_);
 
-
-        this->debug_cur=nh_.advertise<std_msgs::Int16MultiArray>("debug_currents",1);
-        S_e=0;
-
-
         // Finally, do the qb tools thing
         // get the port by id
         /// @todo Abort after a few attempts and print a troubleshoot suggestion:
@@ -172,7 +169,9 @@ namespace iit_hand_hw {
         // fill the state variables
         for (unsigned int i = 0; i < N_SYN; i++) {
             this->device_->joint_position_prev[i] = device_->joint_position[i]/1.0;
-            this->device_->joint_position[i] = double(inputs[0]) / 19000.0;
+            this->device_->joint_position[i] = double(inputs[0]) / max_tick_;
+            float msg_ = this->device_->joint_position[i];
+            // ROS_INFO("Hand says my current position is: %f",  msg_);
             this->device_->joint_effort[i] = double(currents[0]) * 1.0;
             this->device_->joint_velocity[i] =
                     filters::exponentialSmoothing((device_->joint_position[i] - device_->joint_position_prev[i]) / period.toSec(),
@@ -189,10 +188,11 @@ namespace iit_hand_hw {
         short pos;
         if(isModeSet){
             if(isInPositionMode){
-                pos = short(17000.0 * device_->joint_position_command[0]);
+                pos = short(max_tick_ * device_->joint_position_command[0]);
             }
             else{
-                pos = short(device_->joint_position_command[0]);
+                pos = short(max_current_ * device_->joint_position_command[0]);
+                // ROS_INFO("Commanded position error %f", device_->joint_position_command[0]);
             }
         }
         else{
