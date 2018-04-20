@@ -89,12 +89,15 @@ public:
     void set_input(short int pos);
 
     bool set_control_mode(soft_hand_ros_control::setControlMode::Request &req, soft_hand_ros_control::setControlMode::Response &res){
-        uint8_t control_mode;
-        if(req.isInPositionMode) control_mode = 0;
-        else control_mode = 2;
+        // uint8_t control_mode;
+        // if(req.isInPositionMode) control_mode = 0;
+        // else control_mode = 2;
 
-        commGetParamList(&comm_settings_t_,device_id_,6,&control_mode,1,1,NULL);
-        commStoreParams(&comm_settings_t_,device_id_);
+        // commGetParamList(&comm_settings_t_,device_id_,6,&control_mode,1,1,NULL);
+        // usleep(100000);
+        // commStoreParams(&comm_settings_t_,device_id_);
+        // usleep(100000);
+        printf("The control mode service was called, but for now you must have it already set in the hw!!!!! \n");
 
         isInPositionMode = req.isInPositionMode;
         isModeSet = true;
