@@ -43,8 +43,8 @@ namespace iit_hand_hw {
         nh_ = robot_hw_nh;
 
         // Initializing subscribers and publishers
-        hand_meas_sub = nh_.subscribe(std::string(HAND_MEAS_TOPIC), 1000, &soft_hand_qb_hw::SHHW::callBackMeas, this);
-        hand_curr_sub = nh_.subscribe(std::string(HAND_CURR_TOPIC), 1000, &soft_hand_qb_hw::SHHW::callBackCurr, this);
+        hand_meas_sub = nh_.subscribe(std::string(HAND_MEAS_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackMeas, this);
+        hand_curr_sub = nh_.subscribe(std::string(HAND_CURR_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackCurr, this);
         hand_ref_pub = nh_.advertise<qb_interface::handRef>(std::string(HAND_REF_TOPIC), 1000);
 
         // Initializing hand curr and meas variables
@@ -208,7 +208,7 @@ namespace iit_hand_hw {
         // std::cout << "Previous is " << this->device_->joint_position_prev[0] << "!" << std::endl;
         // std::cout << "Current is " << this->device_->joint_effort[0] << "!" << std::endl;
 
-        return true;
+        return;
     }
 
     void IITSH_HW::write(const ros::Time &time, const ros::Duration &period) {
@@ -285,7 +285,7 @@ namespace iit_hand_hw {
         }
     }
 
-    void IITSH_HW::set_input(short pos) {
+    void IITSH_HW::set_input(float pos) {
         static float inputs[2];
 
         inputs[0] = pos;
