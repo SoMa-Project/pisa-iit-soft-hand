@@ -31,7 +31,7 @@
 #include <signal.h>
 #include <stdexcept>
 
-constexpr int CTRL_FREQ = 1000; // Hz
+// constexpr int CTRL_FREQ = 1000; // Hz
 
 bool g_quit = false;
 
@@ -57,7 +57,7 @@ int main( int argc, char** argv )
   ros::NodeHandle iit_nh;
   iit_hand_hw::IITSH_HW iit_softhand;
 
-  ros::Rate loop_rate(CTRL_FREQ);
+  // ros::Rate loop_rate(CTRL_FREQ);
 
   // initialisation/configuration routine
   iit_softhand.init(iit_nh, iit_nh);
@@ -92,7 +92,7 @@ int main( int argc, char** argv )
     // write the command to the iit softhand
     iit_softhand.write(now, period);
 
-    loop_rate.sleep();
+    // loop_rate.sleep();
   }
 
   std::cerr <<" Stopping spinner..." << std::endl;
