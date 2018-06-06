@@ -42,12 +42,12 @@ namespace iit_hand_hw {
     bool IITSH_HW::init(ros::NodeHandle &n, ros::NodeHandle &robot_hw_nh) {
         nh_ = robot_hw_nh;
 
-        // Initializing subscribers and publishers
+        // // Initializing subscribers and publishers
         hand_meas_sub = nh_.subscribe(std::string(HAND_MEAS_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackMeas, this);
         hand_curr_sub = nh_.subscribe(std::string(HAND_CURR_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackCurr, this);
         hand_ref_pub = nh_.advertise<qb_interface::handRef>(std::string(HAND_REF_TOPIC), 1000);
 
-        // Initializing hand curr and meas variables
+        // // Initializing hand curr and meas variables
         hand_meas = 0.0; prev_hand_meas = 0.0;
         hand_curr = 0; prev_hand_curr = 0;
         prev_pos = 0.0;
@@ -95,7 +95,7 @@ namespace iit_hand_hw {
         device_ = std::make_shared<IITSH_HW::IITSH_device>();
 
         //nh_.param("device_id", device_id_, BROADCAST_ID);
-        nh_.param("device_id", device_id_, 1);
+        // nh_.param("device_id", device_id_, 1);
 
         // TODO: use transmission configuration to get names directly from the URDF model
         if (ros::param::get("iit_hand/joints", this->device_->joint_names)) {
@@ -144,8 +144,11 @@ namespace iit_hand_hw {
             hardware_interface::JointHandle joint_handle = hardware_interface::JointHandle(
                         state_interface_.getHandle(this->device_->joint_names[i]),
                         &this->device_->joint_position_command[i]);
+            ROS_INFO("HW interface initialized");
 
             position_interface_.registerHandle(joint_handle);
+
+            ROS_INFO("Handle registered");
 
             registerJointLimits(this->device_->joint_names[i],
                                 joint_handle,
@@ -159,7 +162,12 @@ namespace iit_hand_hw {
 
         // register ros-controls interfaces
         this->registerInterface(&state_interface_);
+        ROS_INFO("State interfaces");
         this->registerInterface(&position_interface_);
+        ROS_INFO("Position interfaces");
+
+        return true;
+
     }
 
     void IITSH_HW::stop() {
