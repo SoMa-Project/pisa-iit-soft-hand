@@ -62,8 +62,6 @@ int main( int argc, char** argv )
   // initialisation/configuration routine
   iit_softhand.init(iit_nh, iit_nh);
 
-  ROS_INFO("I crashed");
-
   // timer variables
   struct timespec ts = {0, 0};
   ros::Time last(ts.tv_sec, ts.tv_nsec), now(ts.tv_sec, ts.tv_nsec);
