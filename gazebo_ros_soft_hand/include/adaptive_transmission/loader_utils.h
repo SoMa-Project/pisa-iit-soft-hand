@@ -33,7 +33,7 @@
 #include <transmission_interface/transmission_loader.h>
 
 using namespace transmission_interface;
-typedef TransmissionLoader::TransmissionPtr TransmissionPtr;
+typedef TransmissionSharedPtr TransmissionPtr;
 
 
 struct TransmissionPluginLoader
