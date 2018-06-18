@@ -95,7 +95,7 @@ namespace iit_hand_hw {
         device_ = std::make_shared<IITSH_HW::IITSH_device>();
 
         //nh_.param("device_id", device_id_, BROADCAST_ID);
-        nh_.param("device_id", device_id_, 1);
+        // nh_.param("device_id", device_id_, 1);
 
         // TODO: use transmission configuration to get names directly from the URDF model
         if (ros::param::get("iit_hand/joints", this->device_->joint_names)) {
@@ -155,11 +155,12 @@ namespace iit_hand_hw {
                                 &this->device_->joint_effort_limits[i]);
         }
 
-        ROS_INFO("Register state and position interfaces");
-
         // register ros-controls interfaces
         this->registerInterface(&state_interface_);
         this->registerInterface(&position_interface_);
+        
+        return true;
+
     }
 
     void IITSH_HW::stop() {

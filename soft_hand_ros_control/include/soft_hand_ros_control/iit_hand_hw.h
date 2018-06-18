@@ -48,8 +48,6 @@
 #include <unistd.h>
 #include "soft_hand_ros_control/definitions.h"
 
-#include "soft_hand_ros_control/setControlMode.h"
-
 // QB interface messages
 #include <qb_interface/handPos.h>
 #include <qb_interface/handCurrent.h>
@@ -134,8 +132,10 @@ public:
         }
     };
 
-    std::shared_ptr<IITSH_HW::IITSH_device> device_;
+    
 private:
+    
+    std::shared_ptr<IITSH_HW::IITSH_device> device_;
     
     ros::NodeHandle nh_;
 
