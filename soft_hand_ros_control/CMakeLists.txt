@@ -23,13 +23,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## This assumes you cloned recursively to get he qbAPI sources
 SET(HAND_TOOLS ../hand-tools/qbAPI)
 
-add_service_files(FILES
-  setControlMode.srv
-)
-
-generate_messages(DEPENDENCIES
-  std_msgs
-)
 
 catkin_package(
     INCLUDE_DIRS include
