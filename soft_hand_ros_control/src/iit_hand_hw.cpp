@@ -28,7 +28,6 @@
 #include <memory>
 
 #include "soft_hand_ros_control/iit_hand_hw.h"
-#include <std_msgs/Int16MultiArray.h> //joao debug
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(iit_hand_hw::IITSH_HW, hardware_interface::RobotHW)
@@ -43,9 +42,52 @@ namespace iit_hand_hw {
     bool IITSH_HW::init(ros::NodeHandle &n, ros::NodeHandle &robot_hw_nh) {
         nh_ = robot_hw_nh;
 
-        controlService = nh_.advertiseService("/setControlMode", &iit_hand_hw::IITSH_HW::set_control_mode, this);
+        // Initializing subscribers and publishers
+        hand_meas_sub = nh_.subscribe(std::string(HAND_MEAS_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackMeas, this);
+        hand_curr_sub = nh_.subscribe(std::string(HAND_CURR_TOPIC), 1000, &iit_hand_hw::IITSH_HW::callBackCurr, this);
+        hand_ref_pub = nh_.advertise<qb_interface::handRef>(std::string(HAND_REF_TOPIC), 1000);
+
+        // Initializing hand curr and meas variables
+        hand_meas = 0.0; prev_hand_meas = 0.0;
+        hand_curr = 0; prev_hand_curr = 0;
+        prev_pos = 0.0;
+
+        initHandVars();
 
         return start();
+    }
+
+    /* Callback function for the position subscriber to qb_interface */
+    void IITSH_HW::callBackMeas(const qb_interface::handPosConstPtr& pos_msg){
+        hand_meas = pos_msg->closure[0];
+    }
+
+    /* Callback function for the current subscriber to qb_interface */
+    void IITSH_HW::callBackCurr(const qb_interface::handCurrentConstPtr& curr_msg){
+        hand_curr = curr_msg->current[0];
+    }
+
+    /* Function for initializing correctly the hand variables without NaNs */
+    bool IITSH_HW::initHandVars(){
+        // Writing first non NaN measurement and current to prev variables
+        bool hand_meas_good = false;
+        bool hand_curr_good = false;
+
+        while(!hand_meas_good && !hand_curr_good){
+          if(!std::isnan(hand_meas)){
+            prev_hand_meas = hand_meas;
+            hand_meas_good = true;
+            if(DEBUG) std::cout << "Found good hand measurement: " << prev_hand_meas << "." << std::endl;
+          }
+          if(!std::isnan(hand_curr)){
+            prev_hand_curr = hand_curr;
+            hand_curr_good = true;
+            if(DEBUG) std::cout << "Found good hand current: " << prev_hand_curr << "." << std::endl;
+          }
+
+          if(DEBUG) std::cout << "Exiting initHandVars." << std::endl;
+        }
+
     }
 
     bool IITSH_HW::start() {
@@ -53,7 +95,7 @@ namespace iit_hand_hw {
         device_ = std::make_shared<IITSH_HW::IITSH_device>();
 
         //nh_.param("device_id", device_id_, BROADCAST_ID);
-        nh_.param("device_id", device_id_, 1);
+        // nh_.param("device_id", device_id_, 1);
 
         // TODO: use transmission configuration to get names directly from the URDF model
         if (ros::param::get("iit_hand/joints", this->device_->joint_names)) {
@@ -113,94 +155,84 @@ namespace iit_hand_hw {
                                 &this->device_->joint_effort_limits[i]);
         }
 
-        ROS_INFO("Register state and position interfaces");
-
         // register ros-controls interfaces
         this->registerInterface(&state_interface_);
         this->registerInterface(&position_interface_);
+        
+        return true;
 
-        // Finally, do the qb tools thing
-        // get the port by id
-        /// @todo Abort after a few attempts and print a troubleshoot suggestion:
-        /// 1- is the hand connect to the computer?
-        /// 2- does the user have the appropriate permissions to access serial ports?
-        /// 3- is the device ID set correctly?
-        /// 4- turn on Debug level for further information.
-        while (true) {
-            if (port_selection(device_id_, port_)) {
-                // open the port
-                assert(open_port(port_));
-                // and activate the hand
-                commActivate(&comm_settings_t_, device_id_, 1);
-                ROS_INFO("Initialisation complete");
-                                // int control_mode=CONTROL_CURRENT;
-                //                uint8_t params[512];
-                //                ROS_WARN("CONTROL MODE: %s",params);
-//                int pos_limits[4];
-                //commGetParamList(&comm_settings_t_, device_id_, PARAM_POS_LIMIT, pos_limits, 4, 2, NULL);
-//                ROS_WARN("LIMITS: %d %d %d %d",pos_limits[0],pos_limits[1],pos_limits[2],pos_limits[3]);
-                return true;
-            }
-            else {
-                ROS_WARN_STREAM("Hand " << device_id_
-                                << " not found on any available ports, trying again...");
-                // randomize the waiting to avoid conflict in files (probabilistically speaking)
-                sleep( 4*((double) rand() / (RAND_MAX)) );
-            }
-        }
     }
 
     void IITSH_HW::stop() {
         usleep(2000000);
-        // Deactivate motors
-        commActivate(&comm_settings_t_, device_id_, 0);
-        closeRS485(&comm_settings_t_);
     }
 
     void IITSH_HW::read(const ros::Time &time, const ros::Duration &period) {
-        // update the hand synergy joints
-        // read from hand
-        static short int inputs[2];
-        commGetMeasurements(&comm_settings_t_, device_id_, inputs);
+        // Position and current are already read from hand by the subscribers but check if NaN
+        float non_nan_hand_meas; short int non_nan_hand_curr;
 
-        static short int currents[2];
-        commGetCurrents(&comm_settings_t_, device_id_, currents);
-
-        // fill the state variables
-        for (unsigned int i = 0; i < N_SYN; i++) {
-            this->device_->joint_position_prev[i] = device_->joint_position[i]/1.0;
-            this->device_->joint_position[i] = double(inputs[0]) / max_tick_;
-            float msg_ = this->device_->joint_position[i];
-            // ROS_INFO("Hand says my current position is: %f",  msg_);
-            this->device_->joint_effort[i] = double(currents[0]) * 1.0;
-            this->device_->joint_velocity[i] =
-                    filters::exponentialSmoothing((device_->joint_position[i] - device_->joint_position_prev[i]) / period.toSec(),
-                                                  device_->joint_velocity[i], 0.2);
+        // Check for NaN in hand measurement and update prev meas if not Nan
+        if(std::isnan(hand_meas)){
+          non_nan_hand_meas = prev_hand_meas;
+        } else {
+          non_nan_hand_meas = hand_meas;
+          prev_hand_meas = hand_meas;
         }
+
+        // Check for NaN in hand current and update prev curr if not NaN
+        if(std::isnan(hand_curr)){
+          non_nan_hand_curr = prev_hand_curr;
+        } else {
+          non_nan_hand_curr = hand_curr;
+          prev_hand_curr = hand_curr;
+        }
+          
+        // Setting the inputs using the obtained hand_meas 
+        static float inputs[2];                             // Two elements for future (SoftHand 2.5)
+        inputs[0] = non_nan_hand_meas;
+        inputs[1] = 0.0;
+
+        // Setting the currents using the obtained hand_curr
+        static short int currents[2];                       // Two elements for future (SoftHand 2.5)
+        currents[0] = non_nan_hand_curr;
+        currents[1] = 0;
+
+        // Fill the state variables
+        for(int j = 0; j < N_SYN; j++){
+          this->device_->joint_position_prev[j] = this->device_->joint_position[j];
+          this->device_->joint_position[j] = (double)(inputs[0]/MAX_HAND_MEAS);
+          this->device_->joint_effort[j] = currents[0]*1.0;
+          this->device_->joint_velocity[j] = filters::exponentialSmoothing((this->device_->joint_position[j]-this->device_->joint_position_prev[j])/period.toSec(), this->device_->joint_velocity[j], 0.2);
+        }
+
+        // std::cout << "Measurement is " << this->device_->joint_position[0] << "!" << std::endl;
+        // std::cout << "Previous is " << this->device_->joint_position_prev[0] << "!" << std::endl;
+        // std::cout << "Current is " << this->device_->joint_effort[0] << "!" << std::endl;
+
+        return;
     }
 
     void IITSH_HW::write(const ros::Time &time, const ros::Duration &period) {
-        // enforce limits
+        // Enforce limits using the period
         pj_sat_interface_.enforceLimits(period);
         pj_limits_interface_.enforceLimits(period);
 
-        
-        short pos;
-        if(isModeSet){
-            if(isInPositionMode){
-                pos = short(max_tick_ * device_->joint_position_command[0]);
-            }
-            else{
-                pos = short(max_current_ * device_->joint_position_command[0]);
-                // ROS_INFO("Commanded position error %f", device_->joint_position_command[0]);
-            }
-        }
-        else{
-            pos = short(0);
+        // Write to the hand the command given by controller manager
+        float pos;
+        pos = (float)(MAX_HAND_MEAS*this->device_->joint_position_command[0]);
+
+        // Check for NaN in hand command and update prev pos if not Nan
+        if(std::isnan(pos)){
+          pos = prev_pos;
+        } else {
+          prev_pos = pos;
         }
         
+        // std::cout << "Command is " << pos << "!" << std::endl;
 
         set_input(pos);
+
+        return;
     }
 
     void IITSH_HW::registerJointLimits(const std::string &joint_name,
@@ -254,83 +286,19 @@ namespace iit_hand_hw {
         }
     }
 
-    int IITSH_HW::port_selection(const int id, char *my_port) {
-        int num_ports = 0;
-        char ports[10][255];
-
-        num_ports = RS485listPorts(ports);
-
-        ROS_DEBUG_STREAM("Search ID " << device_id_ << " in "
-                         << num_ports << " serial ports available...");
-
-        if (num_ports) {
-            for (int i = 0; i < num_ports; i++) {
-                ROS_DEBUG_STREAM("Checking port: " << ports[i]);
-
-                int aux_int;
-                comm_settings comm_settings_t;
-                char list_of_devices[255];
-
-                openRS485(&comm_settings_t, ports[i]);
-
-                if (comm_settings_t.file_handle == INVALID_HANDLE_VALUE) {
-                    ROS_DEBUG_STREAM("Couldn't connect to the serial port. Continue with the next available.");
-                    continue;
-                }
-
-                aux_int = RS485ListDevices(&comm_settings_t, list_of_devices);
-
-                ROS_DEBUG_STREAM( "Number of devices: " << aux_int );
-
-                if (aux_int > 2 || aux_int < 0) {
-                    ROS_WARN("The current port has more than one or none device connected... that is not a SoftHand");
-                }
-                else {
-                    ROS_DEBUG_STREAM("List of devices:");
-                    for (int d = 0; d < aux_int; ++d) {
-                        ROS_DEBUG_STREAM( static_cast<int>(list_of_devices[d]) );
-                        ROS_DEBUG_STREAM( "searching id" << id );
-                        if (static_cast<int>(list_of_devices[d]) == id) {
-                            ROS_DEBUG_STREAM("Hand found at port: " << ports[i] << " !");
-                            strcpy(my_port, ports[i]);
-                            closeRS485(&comm_settings_t);
-                            sleep(1);
-                            return 1;
-                        }
-                        sleep(1);
-                    }
-                }
-                closeRS485(&comm_settings_t);
-            }
-            return 0;
-        }
-        else {
-            ROS_ERROR("No serial port available.");
-            return 0;
-        }
-    }
-
-    int IITSH_HW::open_port(char * port) {
-        ROS_DEBUG_STREAM("Opening serial port: " << port << " for hand_id: " << device_id_);
-        fflush(stdout);
-
-        openRS485(&comm_settings_t_, port);
-
-        if (comm_settings_t_.file_handle == INVALID_HANDLE_VALUE) {
-            ROS_ERROR("Couldn't connect to the selected serial port.");
-            return 0;
-        }
-        usleep(500000);
-        ROS_DEBUG_STREAM("Serial port " << port << " open");
-        return 1;
-    }
-
-    void IITSH_HW::set_input(short pos) {
-        static short int inputs[2];
+    void IITSH_HW::set_input(float pos) {
+        static float inputs[2];
 
         inputs[0] = pos;
-        inputs[1] = 0;
+        inputs[1] = 0.0;
 
-        commSetInputs(&comm_settings_t_, device_id_, inputs);
+        // Creating the Hand Ref message for qb_interface
+        qb_interface::handRef tmp_ref_msg;
+        tmp_ref_msg.closure.push_back(inputs[0]);
+
+        // Publishing the command to robot though qb_interface
+        hand_ref_pub.publish(tmp_ref_msg);
+
+        return;
     }
 }

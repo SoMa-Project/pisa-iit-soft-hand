@@ -15,21 +15,14 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     urdf
     pluginlib
-    combined_robot_hw
+ #   combined_robot_hw
 )
 
 
 ## qbAPI is the default electronics the hand is sold with
 ## This assumes you cloned recursively to get he qbAPI sources
 SET(HAND_TOOLS ../hand-tools/qbAPI)
-
-add_service_files(FILES
-  setControlMode.srv
-)
-
-generate_messages(DEPENDENCIES
-  std_msgs
-)
+message(${HAND_TOOLS})
 
 catkin_package(
     INCLUDE_DIRS include

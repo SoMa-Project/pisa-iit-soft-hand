@@ -46,14 +46,13 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#include "qbmove_communications.h"
 #include "soft_hand_ros_control/definitions.h"
 
-#include "soft_hand_ros_control/setControlMode.h"
+// QB interface messages
+#include <qb_interface/handPos.h>
+#include <qb_interface/handCurrent.h>
+#include <qb_interface/handRef.h>
 
-
-// just thinking of any time in the future the soft hand might have more than one synergy
-constexpr unsigned int N_SYN = 1;
 
 namespace iit_hand_hw {
 class IITSH_HW: public hardware_interface::RobotHW {
@@ -66,6 +65,15 @@ public:
      * @brief Destructor.
      */
     virtual ~IITSH_HW();
+    
+
+    /* Callback functions for the subscribers to qb_interface */
+    void callBackMeas(const qb_interface::handPosConstPtr& pos_msg);
+    void callBackCurr(const qb_interface::handCurrentConstPtr& curr_msg);
+
+    /* Function for initializing correctly the hand variables without NaNs */
+    bool initHandVars();
+
     /**
      * @brief Method implementing all the initialisation required by the class.
      * @param unused node handle
@@ -84,26 +92,7 @@ public:
                              double * const upper_limit,
                              double * const effort_limit);
 
-    int port_selection(const int id, char* my_port);
-    int open_port(char * port);
-    void set_input(short int pos);
-
-    bool set_control_mode(soft_hand_ros_control::setControlMode::Request &req, soft_hand_ros_control::setControlMode::Response &res){
-        // uint8_t control_mode;
-        // if(req.isInPositionMode) control_mode = 0;
-        // else control_mode = 2;
-
-        // commGetParamList(&comm_settings_t_,device_id_,6,&control_mode,1,1,NULL);
-        // usleep(100000);
-        // commStoreParams(&comm_settings_t_,device_id_);
-        // usleep(100000);
-        printf("The control mode service was called, but for now you must have it already set in the hw!!!!! \n");
-
-        isInPositionMode = req.isInPositionMode;
-        isModeSet = true;
-
-        return true;
-    }
+    void set_input(float pos);
 
     struct IITSH_device {
         std::vector<std::string> joint_names;
@@ -142,19 +131,35 @@ public:
             }
         }
     };
-private:
-    std::shared_ptr<IITSH_HW::IITSH_device> device_;
 
+    
+private:
+    
+    std::shared_ptr<IITSH_HW::IITSH_device> device_;
+    
     ros::NodeHandle nh_;
-    float max_tick_ = 19000.0;
-    float max_current_ = 1500.0;
+
+    // A subscriber for getting hand positions from qb_interface
+    ros::Subscriber hand_meas_sub;
+
+    // A subscriber for getting hand currents from qb_interface
+    ros::Subscriber hand_curr_sub;
+
+    // A publisher for publishing hand commands to qb_interface
+    ros::Publisher hand_ref_pub;
+
+    // Variables for temporarily storing hand measurement and current read from topics
+    float hand_meas;
+    short int hand_curr;
+
+    // Variables for storing previous hand measurement and current which are not NaN (used for NaN problem)
+    float prev_hand_meas;
+    short int prev_hand_curr;
+
+    // Variables for storing previous hand command which is not NaN (used for NaN problem)
+    float prev_pos;
 
     int device_id_;
-    comm_settings comm_settings_t_;
-    char port_[255];
-    bool isInPositionMode = true;
-    bool isModeSet = false;
-    ros::ServiceServer controlService;
 
     urdf::Model urdf_model_;
 

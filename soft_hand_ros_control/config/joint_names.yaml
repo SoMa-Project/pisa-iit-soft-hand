@@ -1,3 +1,3 @@
-iit_hand:
-  joints:
-    - soft_hand_synergy_joint
+    iit_hand:
+      joints:
+        - soft_hand_synergy_joint
