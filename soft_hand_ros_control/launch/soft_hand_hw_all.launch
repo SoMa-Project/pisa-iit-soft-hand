@@ -6,7 +6,7 @@
 	<arg name="use_deafult_joint_names" default="true"/>
 	<arg name="load_hand_description" default="true"/> <!-- to allow launching this file alone -->
 	<arg name="load_rviz" default="true"/> <!-- to allow launching this file alone -->
-	<arg name="hand_id" default="1"/>
+	<arg name="hand_id" default="2"/>
 
 <!--
     <param name="robot_description" command="$(find xacro)/xacro -inorder $(find adaptive_example)/robot/soft_hand_adaptive.urdf.xacro use_mimic_tag:=true"/>
@@ -22,7 +22,7 @@
 
 	<!-- LAUNCH IMPLEMENTATION -->
 	<group>
-	<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen"  args="/soft_hand/iit_hand/joint_state_controller /soft_hand/iit_hand/joint_trajectory_controller"/>
+	<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen"  args="/iit_hand/joint_state_controller /iit_hand/joint_trajectory_controller"/>
 
 	<param name="device_id" value="$(arg hand_id)"/>
 	<node name="soft_hand_HW" pkg="soft_hand_ros_control" type="iit_hand_hw_node" respawn="false" output="screen"/>
