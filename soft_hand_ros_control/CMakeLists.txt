@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## qbAPI is the default electronics the hand is sold with
 ## This assumes you cloned recursively to get he qbAPI sources
-SET(HAND_TOOLS ../hand-tools/qbAPI)
+SET(HAND_TOOLS ../../IMU/Management/qbAPI)
 
 catkin_package()
 
