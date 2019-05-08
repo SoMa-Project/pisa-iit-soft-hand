@@ -16,7 +16,19 @@ find_package(catkin REQUIRED COMPONENTS
     urdf
     pluginlib
     combined_robot_hw
+    message_generation
 )
+
+add_service_files(
+   FILES
+   hand_cmd.srv
+   enable_control.srv
+ )
+
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+ )
 
 
 ## qbAPI is the default electronics the hand is sold with
@@ -29,7 +41,7 @@ catkin_package(
     LIBRARIES iit_hand_hw fake_hand_hw
     CATKIN_DEPENDS roscpp control_toolbox controller_interface controller_manager
                    hardware_interface realtime_tools tf urdf
-                   joint_limits_interface pluginlib combined_robot_hw
+                   joint_limits_interface pluginlib combined_robot_hw message_runtime
 #    DEPENDS
 )
 
